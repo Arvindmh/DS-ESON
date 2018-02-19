@@ -19,7 +19,9 @@ package org.eclipse.emf.eson.validation;
 import java.util.NoSuchElementException;
 
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.emf.ecore.EAttribute;
+import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.eson.eFactory.EFactoryPackage;
 import org.eclipse.emf.eson.eFactory.Feature;
 import org.eclipse.emf.eson.eFactory.StringAttribute;
@@ -41,9 +43,22 @@ public abstract class AbstractESONAttributeCustomValidator extends EFactorySwitc
 		if (status.isOK()) {
 			return true;
 		} else {
-			getMessageAcceptor().acceptError(status.getMessage(), object, featureId, INDEX, ERR_METADATA_CHECK);
+			if (status.isMultiStatus()) {
+				MultiStatus mstatus = (MultiStatus) status;
+				for(IStatus stat : mstatus.getChildren()) {
+					if (!stat.isOK()) {
+						error(stat.getMessage(), object, featureId);
+					}
+				}
+			} else {
+				error(status.getMessage(), object, featureId);
+			}
 			return false;
 		}
+	}
+	
+	private void error(String message, EObject object, EAttribute feature) {
+		getMessageAcceptor().acceptError(message, object, feature, INDEX, ERR_METADATA_CHECK);
 	}
 	
 	protected abstract IStatus doCheckStringAttribute(StringAttribute value);
